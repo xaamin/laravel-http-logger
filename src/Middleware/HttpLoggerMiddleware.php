@@ -22,13 +22,10 @@ class HttpLoggerMiddleware
         $uuid = (string)Uuid::generate(4);
 
         $logResponsesIsAllowed = config('http-logger.responses');
-        $driver = config('http-logger.driver');
-
         $logResponsesIsAllowed = config('http-logger.responses');
-        $isDatabaseDriver = strtolower($driver) === 'database';
         $shouldLogRequest = $this->shouldLogRequest($request);
 
-        if ($shouldLogRequest && (!$logResponsesIsAllowed || $isDatabaseDriver)) {
+        if ($shouldLogRequest) {
             $data = [
                 'uuid' => $uuid
             ];
