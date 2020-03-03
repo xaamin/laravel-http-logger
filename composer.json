@@ -1,0 +1,32 @@
+{
+    "name": "xaamin/laravel-http-logger",
+    "description": "HTTP request logger",
+    "authors": [
+        {
+            "name": "Benjamín Martínez Mateos",
+            "email": "xaamin@outlook.com"
+        }
+    ],
+    "autoload": {
+        "files": [
+            "src/Support/helpers.php"
+        ],
+        "psr-4": {
+            "Xaamin\\HttpLogger\\": "src/"
+        }
+    },
+    "require": {
+        "illuminate/support": "~5.0 | ~6.0",
+        "webpatser/laravel-uuid": "^3.0"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Xaamin\\HttpLogger\\HttpLoggerServiceProvider"
+            ],
+            "aliases": {
+                "HttpLogger": "Xaamin\\HttpLogger\\Facades\\HttpLoggerFacade"
+            }
+        }
+    }
+}
