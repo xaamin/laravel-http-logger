@@ -2,8 +2,8 @@
 namespace Xaamin\HttpLogger\Loggers;
 
 use Illuminate\Support\Str;
-use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Http\Request;
 use Illuminate\Contracts\Auth\Guard;
 use Xaamin\HttpLogger\Support\Browser;
 use Illuminate\Contracts\Container\Container;
@@ -62,22 +62,42 @@ abstract class AbstractLogger implements LoggerWriterInterface
      */
     public function getHeadersInfo(Request $request)
     {
-        $except = config('http-logger.except_headers') ? : [];
-        $except = array_map(function ($value) {
-            return Str::lower($value);
-        }, $except);
+        $only = config('http-logger.headers.only');
 
-        $headers = '';
-
-        foreach ($request->header() as $key => $value) {
-            if (in_array(Str::lower($key), $except)) {
-                continue;
-            }
-
-            $value = implode(';', $value);
-
-            $headers .= "{$key}: {$value}\n";
+        if (!!$only) {
+            $only = array_map(function ($value) {
+                return Str::lower($value);
+            }, $only);
         }
+
+        $except = config('http-logger.headers.except');
+
+        if (!!$except) {
+            $except = array_map(function ($value) {
+                return Str::lower($value);
+            }, $except);
+        }
+
+        $headers = [];
+
+        if ($only || $except) {
+            foreach ($request->header() as $key => $value) {
+                $name = Str::lower($key);
+
+                if (
+                    (!!$only && !in_array($name, (array)$only))
+                    || (!$only && $except && in_array($name, (array)$except))
+                ) {
+                    continue;
+                }
+
+                $value = implode(';', $value);
+
+                $headers[$key] = $value;;
+            }
+        }
+
+        $headers = json_encode($headers);
 
         return compact('headers');
     }
