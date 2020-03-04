@@ -84,7 +84,10 @@ return [
         'password_confirmation'
     ],
 
-    'except_header' => [
-        'Authorization'
+    'headers' => [
+        'only' => null,
+        'except' => [
+            'Authorization'
+        ]
     ]
 ];
