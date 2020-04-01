@@ -15,6 +15,8 @@ return [
     */
     'driver' => env('HTTP_LOGGER_DRIVER', 'file'),
 
+    'connection' => env('HTTP_LOGGER_DB_CONNECTION', 'mysql'),
+
     /*
     |--------------------------------------------------------------------------
     | Logger Database Table
