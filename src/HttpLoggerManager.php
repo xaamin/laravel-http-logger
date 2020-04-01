@@ -23,7 +23,7 @@ class HttpLoggerManager extends Manager
 
     protected function getDatabaseConnection()
     {
-        $connection = $this->app['config']['database.default'];
+        $connection = $this->app['config']['http-logger.connection'] ? : 'mysql';
 
         return $this->app['db']->connection($connection);
     }
