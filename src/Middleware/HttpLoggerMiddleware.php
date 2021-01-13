@@ -2,18 +2,25 @@
 namespace Xaamin\HttpLogger\Middleware;
 
 use Closure;
+use Exception;
+use Throwable;
+use LogicException;
 use Webpatser\Uuid\Uuid;
 use Illuminate\Http\Request;
 use Xaamin\HttpLogger\HttpLoggerManager;
+use Xaamin\HttpLogger\Support\DefaultLogProfile;
+use Xaamin\HttpLogger\Contracts\LogProfileInterface;
 use Xaamin\HttpLogger\Contracts\PersistentLoggerWriterInterface;
 
 class HttpLoggerMiddleware
 {
     protected $logger;
+    protected $profiler;
 
-    public function __construct(HttpLoggerManager $logger)
+    public function __construct(HttpLoggerManager $logger, DefaultLogProfile $profiler)
     {
         $this->logger = $logger;
+        $this->profiler = $profiler;
     }
 
     public function handle(Request $request, Closure $next)
@@ -21,7 +28,6 @@ class HttpLoggerMiddleware
         $start = microtime(true);
         $uuid = (string)Uuid::generate(4);
 
-        $logResponsesIsAllowed = config('http-logger.responses');
         $logResponsesIsAllowed = config('http-logger.responses');
         $shouldLogRequest = $this->shouldLogRequest($request);
 
@@ -43,8 +49,7 @@ class HttpLoggerMiddleware
             ];
 
             if ($this->logger->driver() instanceof PersistentLoggerWriterInterface) {
-                $data = $data
-                    + $this->logger->getResponse($response);
+                $data = array_merge($data, $this->logger->getResponse($response));
 
                 $this->logger->queue($data, $uuid);
             } else {
@@ -58,11 +63,24 @@ class HttpLoggerMiddleware
 
     private function shouldLogRequest(Request $request)
     {
-        $methods = config('http-logger.methods');
+        $profiler = config('http-logger.log_profile');
 
-        $isAllMethodsAllowed = $methods === '*' || in_array('*', $methods);
-        $isMethodAllowedFromRequest = in_array(strtolower($request->method()), $methods);
+        if (!!$profiler) {
+            try {
+                $profiler = app($profiler);
+            } catch (Exception $e) {
+                $profiler = null;
+            } catch (Throwable $th) {
+                $profiler = null;
+            }
 
-        return $isAllMethodsAllowed || $isMethodAllowedFromRequest;
+            if (!$profiler instanceof LogProfileInterface) {
+                throw new LogicException('Profiler is not an implementation of LogProfileInterface');
+            }
+        } else {
+            $profiler = $this->profiler;
+        }
+
+        return $profiler->allows($request);
     }
 }

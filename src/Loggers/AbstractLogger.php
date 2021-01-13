@@ -1,6 +1,9 @@
 <?php
 namespace Xaamin\HttpLogger\Loggers;
 
+use Exception;
+use Throwable;
+use LogicException;
 use Illuminate\Support\Str;
 use Illuminate\Support\Arr;
 use Illuminate\Http\Request;
@@ -10,18 +13,29 @@ use Illuminate\Contracts\Container\Container;
 use Symfony\Component\HttpFoundation\Response;
 use Xaamin\HttpLogger\Contracts\LoggerWriterInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Xaamin\HttpLogger\Contracts\LogInputGeneratorInterface;
 
 abstract class AbstractLogger implements LoggerWriterInterface
 {
-    public function getMetaFromCustomInputCreator(Container $container, Request $request)
+    public function getMetaFromCustomInputCreator(Request $request)
     {
         $meta = [];
         $generator = config('http-logger.generator');
 
-        if ($generator) {
-            $class = $container->make($generator);
+        if (!!$generator) {
+            try {
+                $generator = app($generator);
+            } catch (Exception $e) {
+                $generator = null;
+            } catch (Throwable $th) {
+                $generator = null;
+            }
 
-            $meta = $class->generate($request);
+            if (!$generator instanceof LogInputGeneratorInterface) {
+                throw new LogicException('Profiler is not an implementation of LogProfileInterface');
+            }
+
+            $meta = $generator->generate($request);
         }
 
         return $meta;
@@ -108,19 +122,15 @@ abstract class AbstractLogger implements LoggerWriterInterface
      * @param Container $container
      * @return array
      */
-    public function getUserInfo(Container $container = null)
+    public function getUserInfo()
     {
         $data = [];
 
-        if (!$container) {
-            return $data;
-        }
-
-        if ($container->bound(Guard::class)) {
-            $auth = $container->make('auth');
+        if (app()->bound(Guard::class)) {
+            $auth = app('auth');
             $api = $auth->guard('api');
 
-            if (!$auth->guest() or !$api->guest()) {
+            if (!$auth->guest() || !$api->guest()) {
                 $user = $auth->id() ? $auth : $api;
 
                 $data['user_id'] = $user->id();
@@ -136,16 +146,12 @@ abstract class AbstractLogger implements LoggerWriterInterface
      * @param Container $container
      * @return array
      */
-    public function getBrowserInfo(Container $container = null)
+    public function getBrowserInfo()
     {
         $data = [];
 
-        if (!$container) {
-            return $data;
-        }
-
-        if ($container->bound('request')) {
-            $request = $container->make('request');
+        if (app()->bound('request')) {
+            $request = app('request');
             $browser = new Browser($request->header('User-Agent'));
 
             $data['platform'] = $browser->getPlatform();

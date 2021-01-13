@@ -5,7 +5,6 @@ use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Http\Request;
 use Illuminate\Database\ConnectionInterface;
-use Illuminate\Contracts\Container\Container;
 use Xaamin\HttpLogger\Loggers\AbstractLogger;
 use Symfony\Component\HttpFoundation\Response;
 use Xaamin\HttpLogger\Jobs\LogTheHttpRequestJob;
@@ -13,15 +12,13 @@ use Xaamin\HttpLogger\Contracts\PersistentLoggerWriterInterface;
 
 class DatabaseLogger extends AbstractLogger implements PersistentLoggerWriterInterface
 {
-    private $connection;
-    private $container;
     private $table;
+    private $connection;
 
-    public function __construct(ConnectionInterface $connection, $table, Container $container = null)
+    public function __construct(ConnectionInterface $connection, $table)
     {
         $this->connection = $connection;
         $this->table = $table;
-        $this->container = $container;
     }
 
     public function log(Request $request = null, Response $response = null, array $meta = [])
@@ -30,10 +27,10 @@ class DatabaseLogger extends AbstractLogger implements PersistentLoggerWriterInt
 
         $data = $this->getHeadersInfo($request)
             + $this->getRequestInfo($request)
-            + $this->getUserInfo($this->container)
-            + $this->getBrowserInfo($this->container)
+            + $this->getUserInfo()
+            + $this->getBrowserInfo()
             + $this->getResponse($response)
-            + array_merge($meta, $this->getMetaFromCustomInputCreator($this->container, $request));
+            + array_merge($meta, $this->getMetaFromCustomInputCreator($request));
 
         $data['input'] = json_encode(Arr::get($data, 'input', []));
         $data['files'] = json_encode(Arr::get($data, 'files', []));
@@ -45,7 +42,7 @@ class DatabaseLogger extends AbstractLogger implements PersistentLoggerWriterInt
     {
         $queue = config('http-logger.queue');
 
-        if ($queue) {
+        if (!!$queue) {
             $queue = $queue === true ? 'default' : $queue;
 
             $job = (new LogTheHttpRequestJob($data, $identifier))->onQueue($queue)->delay($identifier ? 2 : 0);
