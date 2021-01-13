@@ -1,5 +1,7 @@
 <?php
 
+use Xaamin\HttpLogger\Support\DefaultLogProfile;
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -55,10 +57,11 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | HTTP verbs to be logger
+    | HTTP verbs to be logged
     |--------------------------------------------------------------------------
     |
-    | The http verbs allowed to log, it can be '*' to log all the requests
+    | The http verbs allowed to log, it can be '*' to log all the requests.
+    | Use this option only when no custom profiler is defined.
     |
     | Available: 'post', 'put', 'patch', 'delete', 'get', '*'
     |
@@ -69,9 +72,15 @@ return [
      * Custom meta generator to store into database. Works only for database
      * logging strategy.
      *
-     * Instance of Xaamin\HttpLogger\Support\LogInputGenerator
+     * Implementation of Xaamin\HttpLogger\Contracts\LogInputGeneratorInterface
      */
     'generator' => null,
+
+    /*
+     * The log profile which determines whether a request should be logged.
+     * It should implement `LogProfile`.
+     */
+    'log_profile' => DefaultLogProfile::class,
 
     /*
     |--------------------------------------------------------------------------
