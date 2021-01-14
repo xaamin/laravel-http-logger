@@ -32,7 +32,7 @@ abstract class AbstractLogger implements LoggerWriterInterface
             }
 
             if (!$generator instanceof LogInputGeneratorInterface) {
-                throw new LogicException('Profiler is not an implementation of LogProfileInterface');
+                throw new LogicException('Profiler is not an implementation of LogInputGeneratorInterface');
             }
 
             $meta = $generator->generate($request);
