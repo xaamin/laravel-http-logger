@@ -39,7 +39,6 @@ abstract class AbstractLogger implements LoggerWriterInterface
         }
 
         return $meta;
-
     }
 
     /**
