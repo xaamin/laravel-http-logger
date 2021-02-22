@@ -7,6 +7,7 @@ use Throwable;
 use LogicException;
 use Webpatser\Uuid\Uuid;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Xaamin\HttpLogger\HttpLoggerManager;
 use Xaamin\HttpLogger\Support\DefaultLogProfile;
 use Xaamin\HttpLogger\Contracts\LogProfileInterface;
@@ -36,7 +37,13 @@ class HttpLoggerMiddleware
                 'uuid' => $uuid
             ];
 
-            $this->logger->log($request, null, $data);
+            try {
+                $this->logger->log($request, null, $data);
+            } catch (Throwable $th) {
+                Log::critical((string)$th);
+            } catch (Exception $e) {
+                Log::critical((string)$e);
+            }
         }
 
         $response = $next($request);
@@ -48,14 +55,19 @@ class HttpLoggerMiddleware
                 'response_time' => round($end - $start, 4)
             ];
 
-            if ($this->logger->driver() instanceof PersistentLoggerWriterInterface) {
-                $data = array_merge($data, $this->logger->getResponse($response));
+            try {
+                if ($this->logger->driver() instanceof PersistentLoggerWriterInterface) {
+                    $data = array_merge($data, $this->logger->getResponse($response));
 
-                $this->logger->queue($data, $uuid);
-            } else {
-                $this->logger->log($request, $response, $data);
+                    $this->logger->queue($data, $uuid);
+                } else {
+                    $this->logger->log($request, $response, $data);
+                }
+            } catch (Throwable $th) {
+                Log::critical((string)$th);
+            } catch (Exception $e) {
+                Log::critical((string)$e);
             }
-
         }
 
         return $response;
